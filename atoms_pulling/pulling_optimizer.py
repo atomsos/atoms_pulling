@@ -6,13 +6,17 @@ from numpy.lib.arraysetops import isin
 
 class PullingAtoms(Atoms):
 
-    def set_pair_atoms(self, pair_atoms, k):
+    def set_pair_atoms(self, pair_atoms, k, pair_index=None):
         self.pair_atoms = pair_atoms
         self.k = k
+        self.pair_index = pair_index
         assert isinstance(self.pair_atoms, Atoms)
 
     def get_forces(self, apply_constraint=True, md=False):
         delta_positions = self.pair_atoms.positions - self.positions
+        if self.pair_index is not None:
+            for i in self.pair_index:
+                delta_positions[i,:] = 0
         scale = np.square(np.linalg.norm(delta_positions, axis=1))  # xis 1
         delta_forces = delta_positions * scale[:, np.newaxis]
         delta_forces *= 0.5 * self.k
