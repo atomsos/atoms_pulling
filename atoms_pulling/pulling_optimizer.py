@@ -50,15 +50,12 @@ class PullingBFGS(BFGS):
         super().__init__(self, atoms, restart, logfile, trajectory, maxstep, master, alpha)
 
     def pulling_stop(self):
-        if np.linalg.norm(self.positions - self.initial_position) < self.pulling_threshold:
+        if np.linalg.norm(self.positions - self.initial_position) > self.pulling_threshold:
             return True
         return False
 
     def converged(self, forces=None):
-        if not super().converged():
-            if self.pulling_stop():
-                return True
-        return False
+        return super().converged(forces=forces) or self.pulling_stop()
 
 # d = 0.9575
 # t = np.pi / 180 * 104.51
