@@ -6,15 +6,26 @@ from numpy.linalg import eigh
 
 from ase.optimize.optimize import Optimizer
 from ase.utils import basestring
+from ase.optimize import MDMin, BFGS, LBFGS
+
 
 class CriticalPointError(Exception):
     pass
+
 
 def normalized(v):
     n = np.linalg.norm(v)
     if n < 1e-5:
         return v
     return v/n
+
+
+class SphericalBFGS(BFGS):
+    def __init__(self, atoms, anchor, restart=None, logfile='-', trajectory=None,
+                 maxstep=0.04, master=None, alpha=None):
+        self.anchor = anchor
+        super().__init__(atoms, restart, logfile,
+                         trajectory, maxstep, master, alpha)
 
 class BFGS_SOPT(Optimizer):
     def __init__(self, atoms, anchor, restart=None, logfile='-', trajectory=None,
@@ -48,7 +59,7 @@ class BFGS_SOPT(Optimizer):
         master: boolean
             Defaults to None, which causes only rank 0 to save files.  If
             set to true,  this rank will save files.
-        
+
         debug: boolean
             debug option
         """
@@ -59,7 +70,7 @@ class BFGS_SOPT(Optimizer):
             'Partner is needed when Using Spherical Optimization'
         self.maxstep = maxstep
         self.anchor = anchor
-        self.debug   = debug
+        self.debug = debug
 
         Optimizer.__init__(self, atoms, restart, logfile, trajectory, master)
 
@@ -79,7 +90,8 @@ class BFGS_SOPT(Optimizer):
             assert np.array(self.anchor).shape == (len(self.atoms), 3)
             self.r_anchor = np.array(self.anchor)
         self.R2 = np.square(self.atoms.get_positions() - self.r_anchor).sum()
-        self.index = np.argmax(np.fabs(self.atoms.get_positions() - self.r_anchor).ravel())
+        self.index = np.argmax(
+            np.fabs(self.atoms.get_positions() - self.r_anchor).ravel())
 
     def read(self):
         self.H, self.r0, self.f0, self.maxstep = self.load()
@@ -92,15 +104,20 @@ class BFGS_SOPT(Optimizer):
         # get new force by projecting radial part
         r_anchor = self.r_anchor.ravel()
         r_v = normalized(r - r_anchor)
-        force_mod = (force_real - np.dot(force_real, r_v) * r_v).reshape((-1, 3))
+        force_mod = (force_real - np.dot(force_real, r_v)
+                     * r_v).reshape((-1, 3))
         # determine index of the removed one
         index = self.index
         if self.debug:
-            import pdb; pdb.set_trace()
+            import pdb
+            pdb.set_trace()
+
         def rm_index(r, index=0):
             return np.delete(r, index)
+
         def add_index(r, index=0, val=0):
             return np.insert(r, index, val)
+
         def get_real_positions(r_mod, r_anchor, R2, index, sign=1):
             """
             r_mod: 3n-1 vector, modified positions
@@ -109,8 +126,10 @@ class BFGS_SOPT(Optimizer):
             dr_mod = r_mod - rm_index(r_anchor, index)
             if R2 - np.square(dr_mod).sum() < 0:
                 raise ValueError('dr too large')
-            val = np.sqrt(R2 - np.square(dr_mod).sum()) * sign + r_anchor[index]
+            val = np.sqrt(R2 - np.square(dr_mod).sum()) * \
+                sign + r_anchor[index]
             return add_index(r_mod, index, val)
+
         def gradF(r, r_anchor, R2, index, sign=1):
             dri = r[index] - r_anchor[index]
             dr_all = rm_index(r-r_anchor, index)
@@ -125,14 +144,14 @@ class BFGS_SOPT(Optimizer):
             sign = -1
 
         gradf = gradF(r, r_anchor, self.R2, index, sign)
-        f = rm_index(force_real, index) + force_real[index] * gradf 
+        f = rm_index(force_real, index) + force_real[index] * gradf
         r0 = self.r0
         if r0 is not None:
             r0 = rm_index(self.r0, index)
         self.update(r_mod, f, r0, self.f0)
         omega, V = eigh(self.H)
         dr = np.dot(V, np.dot(f, V) / np.fabs(omega))
-        
+
         # dr_value = np.dot(gradf, dr)
         # dr = add_index(dr, index, dr_value)
         # index_pos = r[index] + dr_value
@@ -144,13 +163,14 @@ class BFGS_SOPT(Optimizer):
         #     dr = self.determine_step(dr.reshape((-1,3)), steplengths).ravel()
         #     newr = r + dr
         #     index_pos = newr[index]
-        # xdr = 
+        # xdr =
         dr = self.determine_step(dr, abs(dr))
         #print("r, r_mod, r0, dr", r, r_mod, r0, dr)
         unavailable = True
         while unavailable:
             try:
-                new_r = get_real_positions(r_mod+dr, r_anchor, self.R2, index, sign)
+                new_r = get_real_positions(
+                    r_mod+dr, r_anchor, self.R2, index, sign)
                 unavailable = False
             except ValueError:
                 dr /= 2.
@@ -235,7 +255,8 @@ class BFGS_SOPT(Optimizer):
                 f = self.step(origin_f)
             except CriticalPointError:
                 if debug:
-                    print('ValueError, initialize, step {0}, index: {1}'.format(step, self.index))
+                    print('ValueError, initialize, step {0}, index: {1}'.format(
+                        step, self.index))
                 self.initialize()
                 if debug:
                     print('index: {0}'.format(self.index))
