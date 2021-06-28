@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "C:\\ProgramData\\Anaconda3\\python.exe",
+    "python.pythonPath": "/home/sky/.conda/envs/py3.6/bin/python",
     "git.ignoreLimitWarning": true
 }

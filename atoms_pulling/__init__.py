@@ -1,1 +1,2 @@
-from .pulling_optimizer import PullingAtoms, PullingBFGS, PullingMDMin, PullingLBFGS
+from .pulling_atoms import PullingAtoms
+from .pulling_optimizer import PullingBFGS, PullingMDMin, PullingLBFGS

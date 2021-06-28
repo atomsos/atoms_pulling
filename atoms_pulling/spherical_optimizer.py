@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 from numpy.linalg import eigh
 
+from ase.atoms import Atoms
 from ase.optimize.optimize import Optimizer
 from ase.utils import basestring
 from ase.optimize import MDMin, BFGS, LBFGS
@@ -21,15 +22,17 @@ def normalized(v):
 
 
 class SphericalBFGS(BFGS):
-    def __init__(self, atoms, anchor, restart=None, logfile='-', trajectory=None,
+    def __init__(self, atoms: Atoms, anchor: Atoms, restart=None, logfile='-', trajectory=None,
                  maxstep=0.04, master=None, alpha=None):
         self.anchor = anchor
         super().__init__(atoms, restart, logfile,
                          trajectory, maxstep, master, alpha)
 
-class BFGS_SOPT(Optimizer):
-    def __init__(self, atoms, anchor, restart=None, logfile='-', trajectory=None,
-                 maxstep=0.04, master=None, debug=False):
+
+class SOPT_BFGS(Optimizer):
+    def __init__(self, atoms: Atoms, anchor: Atoms, index=None, restart=None, logfile='-', trajectory=None,
+                 maxstep=0.04, master=None, append_trajectory=False,
+                 force_consistent=False,):
         """Modified BFGS optimizer for Spherical Optimization.
 
         Parameters:
@@ -70,9 +73,12 @@ class BFGS_SOPT(Optimizer):
             'Partner is needed when Using Spherical Optimization'
         self.maxstep = maxstep
         self.anchor = anchor
-        self.debug = debug
+        self.index = index
+        self.debug = False
 
-        Optimizer.__init__(self, atoms, restart, logfile, trajectory, master)
+        Optimizer.__init__(self, atoms, restart, logfile,
+                           trajectory, master,
+                           append_trajectory, force_consistent)
 
     def todict(self):
         d = Optimizer.todict(self)
@@ -108,9 +114,9 @@ class BFGS_SOPT(Optimizer):
                      * r_v).reshape((-1, 3))
         # determine index of the removed one
         index = self.index
-        if self.debug:
-            import pdb
-            pdb.set_trace()
+        # if True:
+        #     import pdb
+        #     pdb.set_trace()
 
         def rm_index(r, index=0):
             return np.delete(r, index)
@@ -175,7 +181,7 @@ class BFGS_SOPT(Optimizer):
             except ValueError:
                 dr /= 2.
         # atoms.set_positions(r_real + dr.reshape((-1,3)))
-        atoms.set_positions(new_r)
+        atoms.set_positions(new_r.reshape((-1, 3)))
         newR2 = np.square(self.atoms.get_positions() - self.r_anchor).sum()
         if abs(newR2 - self.R2) > 0.1:
             raise ValueError()
@@ -233,6 +239,15 @@ class BFGS_SOPT(Optimizer):
         self.r0 = r0
         self.f0 = f0
 
+    def run(self, fmax=0.05, steps=100000000):
+        """ call Dynamics.run and keep track of fmax"""
+        self.fmax = fmax
+        if steps:
+            self.max_steps = steps
+        for converged in self.irun(fmax, steps):
+            pass
+        return converged
+
     def irun(self, fmax=0.05, steps=100000000, debug=False):
         """Run structure optimization algorithm as generator. This allows, e.g.,
         to easily run two optimizers at the same time.
@@ -271,3 +286,18 @@ class BFGS_SOPT(Optimizer):
             step += 1
 
         yield False
+
+
+class SOPT_LBFGS(LBFGS):
+    def __init__(self, atoms, anchor, index=None, restart=None, logfile='-', trajectory=None,
+                 maxstep=None, memory=100, damping=1, alpha=70,
+                 use_line_search=False, master=None,
+                 force_consistent=None, append_trajectory=False):
+        self.anchor = anchor
+        self.index = index
+        super().__init__(atoms, restart=restart, logfile=logfile,
+                         trajectory=trajectory,
+                         maxstep=maxstep, memory=memory, damping=damping,
+                         alpha=alpha, use_line_search=use_line_search, master=master,
+                         force_consistent=force_consistent, append_trajectory=append_trajectory)
+

@@ -2,27 +2,9 @@ import numpy as np
 
 from ase import Atoms
 from ase.optimize import MDMin, BFGS, LBFGS
+from ase.optimize.sciopt import SciPyFminBFGS, SciPyFminCG
 
-
-class PullingAtoms(Atoms):
-
-    def set_pair_atoms(self, pair_atoms, index=None):
-        self.pair_atoms = pair_atoms
-        self.pair_index = index
-        assert isinstance(self.pair_atoms, Atoms)
-
-    def set_spring_k(self, k):
-        self.spring_k = k
-
-    def get_forces(self, apply_constraint=True, md=False):
-        delta_positions = self.pair_atoms.positions - self.positions
-        if self.pair_index is not None:
-            for i in self.pair_index:
-                delta_positions[i, :] = 0
-        scale = np.square(np.linalg.norm(delta_positions, axis=1))  # xis 1
-        delta_forces = delta_positions * scale[:, np.newaxis]
-        delta_forces *= 0.5 * self.spring_k
-        return super().get_forces(apply_constraint=apply_constraint, md=md) + delta_forces
+from .pulling_atoms import PullingAtoms
 
 
 class PullingOptimizer():
@@ -45,6 +27,7 @@ class PullingBFGS(BFGS):
         self.pair_atoms = pair_atoms
         self.pulling_threshold = pulling_threshold
         self.initial_position = self.atoms.positions.copy()
+
         super().__init__(atoms, restart, logfile, trajectory, maxstep, master, alpha)
 
     def pulling_stop(self):
@@ -63,7 +46,7 @@ class PullingLBFGS(LBFGS):
                  restart=None, logfile='-', trajectory=None,
                  maxstep=None, memory=100, damping=1.0, alpha=70.0,
                  use_line_search=False, master=None,
-                 force_consistent=None):
+                 force_consistent=None, append_trajectory=False):
 
         # self.atoms = PullingAtoms(atoms, pair_atoms=pair_atoms, k=k)
         assert isinstance(atoms, PullingAtoms)
@@ -71,10 +54,11 @@ class PullingLBFGS(LBFGS):
         self.pair_atoms = pair_atoms
         self.pulling_threshold = pulling_threshold
         self.initial_position = self.atoms.positions.copy()
-        super().__init__(atoms, restart, logfile, trajectory,
-                         maxstep, memory, damping, alpha,
-                         use_line_search, master,
-                         force_consistent)
+
+        super().__init__(atoms=atoms, restart=restart, logfile=logfile, trajectory=trajectory,
+                         maxstep=maxstep, memory=memory, damping=damping, alpha=alpha,
+                         use_line_search=use_line_search, master=master,
+                         force_consistent=force_consistent, append_trajectory=append_trajectory)
 
     def pulling_stop(self):
         if np.linalg.norm(self.atoms.positions - self.initial_position) > self.pulling_threshold:
@@ -99,8 +83,40 @@ class PullingMDMin(MDMin):
         self.pair_atoms = pair_atoms
         self.pulling_threshold = pulling_threshold
         self.initial_position = self.atoms.positions.copy()
+
         super().__init__(atoms, restart, logfile, trajectory,
                          dt, master, append_trajectory, force_consistent)
+
+    def pulling_stop(self):
+        import pdb
+        pdb.set_trace()
+        if np.linalg.norm(self.atoms.positions - self.initial_position) > self.pulling_threshold:
+            print("Pulling Stop")
+            return True
+        return False
+
+    def converged(self, forces=None):
+        # import pdb; pdb.set_trace()
+        return super().converged(forces=forces) or self.pulling_stop()
+
+
+class PullingCG(SciPyFminCG):
+
+    def __init__(self, atoms, pair_atoms, pulling_threshold=1,
+                 logfile='-', trajectory=None,
+                 callback_always=False, alpha=70.0, master=None,
+                 append_trajectory=False, force_consistent=None):
+        # self.atoms = PullingAtoms(atoms, pair_atoms=pair_atoms, k=k)
+        assert isinstance(atoms, PullingAtoms)
+        self.atoms = atoms
+        self.pair_atoms = pair_atoms
+        self.pulling_threshold = pulling_threshold
+        self.initial_position = self.atoms.positions.copy()
+
+        super().__init__(atoms, logfile=logfile, trajectory=trajectory,
+                         callback_always=callback_always, alpha=alpha, master=master,
+                         append_trajectory=append_trajectory,
+                         force_consistent=force_consistent)
 
     def pulling_stop(self):
         if np.linalg.norm(self.atoms.positions - self.initial_position) > self.pulling_threshold:

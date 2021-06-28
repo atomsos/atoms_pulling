@@ -1,6 +1,7 @@
 
 import ase.io
 
+
 def get_index(index_file, name):
     content = open(index_file).read()
     idx = content.find('[ ' + name + ' ]\n')
