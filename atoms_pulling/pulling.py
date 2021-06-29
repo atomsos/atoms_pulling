@@ -13,6 +13,7 @@ from .spherical_optimizer import SOPT_BFGS, SOPT_LBFGS
 
 from ase.calculators.gromacs import Gromacs
 from ase.calculators.emt import EMT
+from atoms_pulling.robust import RigidCalculator
 
 
 def minimize_rotation_and_translation(target, atoms, index=None):
@@ -74,7 +75,7 @@ def pulling(atoms: Atoms, pair_atoms: Atoms, index=None,
 
     calculator = calculator or EMT()
     start.calc = calculator
-    if isinstance(calculator, Gromacs):
+    if isinstance(calculator, (Gromacs, RigidCalculator)):
         calculator.atoms = start
 
     converged = False
@@ -82,12 +83,15 @@ def pulling(atoms: Atoms, pair_atoms: Atoms, index=None,
     max_pulling_step = 100
     spring_k = init_spring_k
     spring_order = 1
-    os.system('rm -f pull.gro')
+    enable_gro = False
+    if 'residuenames' in start.arrays:
+        enable_gro = True
+        os.system('rm -f pull.gro')
 
-    traj = Trajectory('pull_res.traj', mode='w')
+    traj = Trajectory('res.traj', mode='w')
+    start.set_spring(spring_k, spring_order)
     traj.write(start)
     while not converged and pulling_step < max_pulling_step:
-        start.set_spring(spring_k, spring_order)
         start.enable_pulling()
         print('start Pulling')
 
@@ -97,31 +101,38 @@ def pulling(atoms: Atoms, pair_atoms: Atoms, index=None,
         pull = PullingLBFGS(atoms=start, pair_atoms=pair_atoms,
                             pulling_threshold=pulling_threshold, restart=None,
                             logfile='-', trajectory='pull.traj',
-                            maxstep=None, memory=100, damping=1, alpha=70,
+                            maxstep=0.05, memory=100, damping=1, alpha=70,
                             use_line_search=False, master=None,
                             force_consistent=None, append_trajectory=True)
         # import pdb; pdb.set_trace()
-        pull.run(fmax=0.2)
-        # optimize start with spherical opt
-        start.disable_pulling()
-        start.write('.pull.gro')
-        os.system('echo >> .pull.gro; cat .pull.gro >> pull.gro; ')
-        # import pdb
-        # pdb.set_trace()
+        pull.run(fmax=0.2, steps=200)
 
+        if enable_gro:
+            start.write('.pull.gro')
+            os.system('echo >> .pull.gro; cat .pull.gro >> pull.gro; ')
+
+        # optimize start with spherical opt
         if use_sopt:
+            start.disable_pulling()
             print('start BFGS_SOPT')
-            opt = SOPT_BFGS(atoms=start, anchor=pair_atoms, index=index, logfile='-',
+            opt = SOPT_BFGS(atoms=start, anchor=pair_atoms, index=index,
+                            logfile='-',
                             trajectory='sopt.traj', append_trajectory=True)
             opt.run(fmax=0.1)
+
         dx = start.get_positions() - pair_atoms.get_positions()
-        if np.linalg.norm(dx[index, :]) < 0.5:
+        if abs(dx).max() < 0.8:
             converged = True
             print('Converged!', pulling_step)
-        pulling_step += 1
+
         if not pull.pulling_stop():
             spring_k *= 1.5
+            start.set_spring(spring_k, spring_order)
 
+        pulling_step += 1
+        print("Write res.traj")
+        # import pdb; pdb.set_trace()
+        start.disable_pulling()
         traj.write(start)
 
 

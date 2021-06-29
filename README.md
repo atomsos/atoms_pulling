@@ -57,3 +57,41 @@ class Pulling_Optimization(Optimization):
         return False
 
 ```
+
+
+
+
+## TS searching
+
+* One point problem:
+    * Given Rr, find nearby minumums and the path p
+
+* Two Point TS problem:
+    * Given Rr, Rp, find a path p so that min_p{max{E_p}}
+
+* Minimum guessing
+    * guess the minimums nearby
+
+2P problem is much easier than 1P problem. 
+Or 1P problem can be regarded as 2P problem & minimum guessing
+
+
+* Path problem
+* Minimum problem
+
+### Path Problem
+
+
+Given structure Rr, Rp, find a path p so that min_p{max{E_p}}
+
+Chain of States methods are best suitable.
+
+
+1. generate a chain
+    * pair the atoms(ARRM)
+    * interpolate the coordinates
+2. optimize the chain
+    * NEB/CI-NEB
+
+
+

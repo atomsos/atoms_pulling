@@ -75,14 +75,21 @@ class PullingAtoms(SubAtoms, Atoms):
     def _get_vertical_forces(self, forces):
         rand = np.random.rand(len(self), 3)
         # vertical
-        rand[:, 2] = -(rand[:, 0] * forces[:, 0] +
-                       rand[:, 1] * forces[:, 1]) / forces[:, 2]
+        rand[:, 2] = -np.divide(rand[:, 0] * forces[:, 0] +
+                                rand[:, 1] * forces[:, 1], forces[:, 2],
+                                out=np.zeros_like(forces[:, 2]),
+                                where=forces[:, 2] != 0.)
 
         # rand force scale should be 0.1 of forces
-        scale_f = np.linalg.norm(forces, axis=1)
-        scale_r = np.linalg.norm(rand, axis=1)
-        rand = rand / scale_r[:, np.newaxis] * scale_f[:, np.newaxis]
-        rand *= 0.05
+        scale_f = np.hstack(
+            [np.linalg.norm(forces, axis=1).flatten()[:, np.newaxis]] * 3)
+        scale_r = np.hstack(
+            [np.linalg.norm(rand, axis=1).flatten()[:, np.newaxis]] * 3)
+        # rand = rand / scale_r * scale_f
+        rand = scale_f * \
+            np.divide(rand, scale_r, out=np.zeros_like(
+                scale_r), where=scale_r != 0)
+        rand *= 0.5
         return rand
 
     def _get_spring_forces(self, origin_force=None):

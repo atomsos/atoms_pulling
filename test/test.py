@@ -9,6 +9,8 @@ from ase.calculators.gromacs import Gromacs
 from ase.build import minimize_rotation_and_translation
 from atoms_pulling.pulling import pulling
 
+from atoms_pulling.robust import RigidCalculator
+
 
 def main():
     start = ase.io.read('first.gro')
@@ -81,6 +83,8 @@ def main_6mrc():
     calc = Gromacs(clean=False)
     calc.params_runs['extra_mdrun_parameters'] = '-nt 1'
     calc.params_runs['extra_grompp_parameters'] = '-n index.ndx'
+
+    # calc = RigidCalculator(start)
     # calc.atoms = start
 
     index = get_index('index.ndx', 'protein_lig')
