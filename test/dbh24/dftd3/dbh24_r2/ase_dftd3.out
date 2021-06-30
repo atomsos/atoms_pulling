@@ -1,0 +1,62 @@
+  _________________________________
+                                   
+ |         DFTD3 V3.1 Rev 1        |
+ | S.Grimme, University Bonn       |
+ |         October  2015           |
+ |   see dftd3 -h for options      |
+  _________________________________
+
+ Please cite DFT-D3 work done with this code as:
+ S. Grimme, J. Antony, S. Ehrlich and H. Krieg,
+ J. Chem. Phys. 132 (2010), 154104
+ If used with BJ-damping cite also
+ S. Grimme, S. Ehrlich and L. Goerigk,
+ J. Comput. Chem. 32 (2011), 1456-1465
+ For DFT-D2 the reference is
+ S. Grimme, J. Comput. Chem., 27 (2006), 1787-1799
+ For DFT-D3M or DFT-D3M(BJ) the reference is
+ D.G.A. Smith, L.A. Burns, K. Patkowski, and 
+ C.D. Sherrill, J. Phys. Chem. Lett. 7 (2016) 2197-2203
+
+  files read :     
+ ase_dftd3.xyz
+C6 coefficients used:
+           2  C6 for element            1
+Z=  1 CN= 0.912     C6(AA)=    3.03
+Z=  1 CN= 0.000     C6(AA)=    7.59
+           2  C6 for element           17
+Z= 17 CN= 0.000     C6(AA)=   92.35
+Z= 17 CN= 0.997     C6(AA)=   90.40
+
+#               XYZ [au]               R0(AA) [Ang.]  CN       C6(AA)     C8(AA)   C10(AA) [au] 
+   1   0.23810   0.23216  -1.08138   h     1.091    0.934         3.1        37.8       560.1
+   2   0.04581   0.47402   8.24170   h     1.091    0.000         7.4        89.4      1323.7
+   3   1.10783   1.04997   1.48585   cl    1.552    0.934        90.5      3774.2    192903.0
+
+molecular C6(AA) [au] =       194.97
+
+           DFT-D V3
+ DF pbe                                               
+ parameters
+ s6       :    1.0000
+ s8       :    0.7220
+ rs6      :    1.2170
+ rs18     :    1.0000
+ alpha6   :   14.0000
+ alpha8   :   16.0000
+ k1-k3    :   16.0000    1.3333   -4.0000
+ Cutoff   :   95.0000 a.u.
+ CN-Cutoff:   40.0000 a.u.
+
+ Edisp /kcal,au:    -0.1654 -0.00026364
+
+ E6    /kcal :    -0.1109
+ E8    /kcal :    -0.0546
+ % E8        : 32.99
+
+ doing analytical gradient O(N^2) ...
+
+ |G|=   3.5525114868102377E-004
+gdisp time     0.0
+ Cartesian gradient written to file dftd3_gradient
+ normal termination of dftd3

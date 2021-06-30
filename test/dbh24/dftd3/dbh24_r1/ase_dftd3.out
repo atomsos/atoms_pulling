@@ -1,0 +1,72 @@
+  _________________________________
+                                   
+ |         DFTD3 V3.1 Rev 1        |
+ | S.Grimme, University Bonn       |
+ |         October  2015           |
+ |   see dftd3 -h for options      |
+  _________________________________
+
+ Please cite DFT-D3 work done with this code as:
+ S. Grimme, J. Antony, S. Ehrlich and H. Krieg,
+ J. Chem. Phys. 132 (2010), 154104
+ If used with BJ-damping cite also
+ S. Grimme, S. Ehrlich and L. Goerigk,
+ J. Comput. Chem. 32 (2011), 1456-1465
+ For DFT-D2 the reference is
+ S. Grimme, J. Comput. Chem., 27 (2006), 1787-1799
+ For DFT-D3M or DFT-D3M(BJ) the reference is
+ D.G.A. Smith, L.A. Burns, K. Patkowski, and 
+ C.D. Sherrill, J. Phys. Chem. Lett. 7 (2016) 2197-2203
+
+  files read :     
+ ase_dftd3.xyz
+C6 coefficients used:
+           2  C6 for element            1
+Z=  1 CN= 0.912     C6(AA)=    3.03
+Z=  1 CN= 0.000     C6(AA)=    7.59
+           4  C6 for element            7
+Z=  7 CN= 0.000     C6(AA)=   25.27
+Z=  7 CN= 0.994     C6(AA)=   22.12
+Z=  7 CN= 2.014     C6(AA)=   19.68
+Z=  7 CN= 2.990     C6(AA)=   15.58
+           3  C6 for element            8
+Z=  8 CN= 0.000     C6(AA)=   15.51
+Z=  8 CN= 0.993     C6(AA)=   12.82
+Z=  8 CN= 1.989     C6(AA)=   10.37
+
+#               XYZ [au]               R0(AA) [Ang.]  CN       C6(AA)     C8(AA)   C10(AA) [au] 
+   1   0.47081   0.20545   9.29115   n     1.311    1.000        22.1       488.4     13197.8
+   2   0.07228   0.07774   9.03700   n     1.311    1.000        22.1       488.4     13197.8
+   3   0.85457   0.91342   1.30700   o     1.241    0.733        13.1       265.3      6558.8
+   4   0.11606   0.27671  -0.72269   h     1.091    0.733         3.4        41.6       616.4
+
+molecular C6(AA) [au] =       220.47
+ --------------------------------------------------
+ !! SOME DISTANCES VERY SHORT. CHECK COORDINATES !!
+ --------------------------------------------------
+
+           DFT-D V3
+ DF pbe                                               
+ parameters
+ s6       :    1.0000
+ s8       :    0.7220
+ rs6      :    1.2170
+ rs18     :    1.0000
+ alpha6   :   14.0000
+ alpha8   :   16.0000
+ k1-k3    :   16.0000    1.3333   -4.0000
+ Cutoff   :   95.0000 a.u.
+ CN-Cutoff:   40.0000 a.u.
+
+ Edisp /kcal,au:    -0.1160 -0.00018486
+
+ E6    /kcal :    -0.0928
+ E8    /kcal :    -0.0232
+ % E8        : 19.96
+
+ doing analytical gradient O(N^2) ...
+
+ |G|=   3.5717888336227475E-004
+gdisp time     0.0
+ Cartesian gradient written to file dftd3_gradient
+ normal termination of dftd3
