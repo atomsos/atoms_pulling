@@ -126,7 +126,8 @@ class RobustCalculator():
         self._cutoff_matrix = self._cutoffs.reshape(
             (1, -1)) + self._cutoffs.reshape((-1, 1))
         self._dist_matrix = get_distance_matrix(self.atoms)
-        self._group = get_groups(self._dist_matrix < self._cutoff_matrix * 1.45)
+        self._group = get_groups(
+            self._dist_matrix < self._cutoff_matrix * 1.45)
 
     def get_potential_energy(self, atoms=None, force_consistent=None):
         return 0.0
@@ -254,21 +255,31 @@ class RigidOptimizer():
         min_position = None
         min_dpos = np.linalg.norm(atoms.positions - pair_positions)
 
-        for phi in range(-180, 180, 20):
-            for theta in range(-180, 180, 20):
-                for psi in range(-180, 180, 20):
+        if self.refinement:
+            phi_max, theta_max, psi_max = [20, 20, 20]
+            phi_min, theta_min, psi_min = [-20, -20, -20]
+            seg = 5
+        else:
+            phi_max, theta_max, psi_max = [180, 180, 180]
+            phi_min, theta_min, psi_min = [-180, -180, -180]
+            seg = 20
+
+        for phi in np.linspace(phi_min, phi_max, int((phi_max - phi_min) / seg) + 1):
+            for theta in np.linspace(theta_min, theta_max, int((theta_max - theta_min) / seg) + 1):
+                for psi in np.linspace(psi_min, psi_max, int((psi_max - psi_min) / seg) + 1):
                     atoms.set_positions(initial_position.copy())
                     # atoms.rotate
                     atoms.euler_rotate(phi, theta, psi, mass_center)
                     new_pos = atoms.get_positions()
-                    if self.collapse(new_pos, group_index, only_dist=self.refinement):
+                    if self.collapse(new_pos, group_index, only_dist=not self.refinement):
                         # self.logfile.write('collapsed')
                         continue
                     dpos = np.linalg.norm(atoms.positions - pair_positions)
                     if dpos < min_dpos:
                         min_dpos = dpos
                         min_position = atoms.get_positions()
-                        self.logfile.write(f'rotate, min_dpos: {min_dpos}, {phi}, {theta}, {psi}\n')
+                        self.logfile.write(
+                            f'rotate, min_dpos: {min_dpos}, {phi}, {theta}, {psi}\n')
         if min_position is not None:
             self.atoms.positions[group_index] = min_position
         else:
@@ -369,7 +380,7 @@ class RigidOptimizer():
                     # if z > 12:
                     #     import pdb; pdb.set_trace()
                     new_pos = dpos + init_pos
-                    if self.collapse(new_pos, group_index, only_dist=self.refinement):
+                    if self.collapse(new_pos, group_index, only_dist=not self.refinement):
                         # self.logfile.write('collapsed')
                         continue
                     dpos_norm = np.linalg.norm(new_pos - pair_pos)
