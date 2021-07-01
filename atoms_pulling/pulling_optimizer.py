@@ -1,7 +1,14 @@
 import numpy as np
 
 from ase import Atoms
-from ase.optimize import MDMin, BFGS, LBFGS
+from ase.optimize import FIRE
+from ase.optimize import MDMin
+from ase.optimize import BFGS
+from ase.optimize import LBFGS
+
+# from asap3.optimize.fire import FIRE
+# from asap3.optimize.mdmin import MDMin
+
 from ase.optimize.sciopt import SciPyFminBFGS, SciPyFminCG
 
 from .pulling_atoms import PullingAtoms
@@ -32,7 +39,7 @@ class PullingBFGS(BFGS):
 
     def pulling_stop(self):
         if np.linalg.norm(self.atoms.positions - self.initial_position) > self.pulling_threshold:
-            print("Pulling Stop")
+            print(self.__class__.__name__, "Pulling Stop")
             return True
         return False
 
@@ -62,7 +69,7 @@ class PullingLBFGS(LBFGS):
 
     def pulling_stop(self):
         if np.linalg.norm(self.atoms.positions - self.initial_position) > self.pulling_threshold:
-            print("Pulling Stop")
+            print(self.__class__.__name__, "Pulling Stop")
             return True
         return False
 
@@ -91,7 +98,7 @@ class PullingMDMin(MDMin):
         import pdb
         pdb.set_trace()
         if np.linalg.norm(self.atoms.positions - self.initial_position) > self.pulling_threshold:
-            print("Pulling Stop")
+            print(self.__class__.__name__, "Pulling Stop")
             return True
         return False
 
@@ -120,7 +127,7 @@ class PullingCG(SciPyFminCG):
 
     def pulling_stop(self):
         if np.linalg.norm(self.atoms.positions - self.initial_position) > self.pulling_threshold:
-            print("Pulling Stop")
+            print(self.__class__.__name__, "Pulling Stop")
             return True
         return False
 

@@ -8,7 +8,7 @@ from ase.calculators.emt import EMT
 from ase.calculators.gromacs import Gromacs
 from ase.build import minimize_rotation_and_translation
 from atoms_pulling.pulling import pulling
-from atoms_pulling.rigid import RigidCalculator
+from atoms_pulling.rigid import RobustCalculator
 
 
 def main(axis='x', name='H2CO'):

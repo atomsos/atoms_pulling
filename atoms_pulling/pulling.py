@@ -13,7 +13,8 @@ from .spherical_optimizer import SOPT_BFGS, SOPT_LBFGS
 
 from ase.calculators.gromacs import Gromacs
 from ase.calculators.emt import EMT
-from atoms_pulling.robust import RigidCalculator
+from atoms_pulling.rigid import RobustCalculator
+# from ase.calculators.dftd3 import DFTD3
 
 
 def minimize_rotation_and_translation(target, atoms, index=None):
@@ -54,9 +55,12 @@ def get_gromcas_index(index_file, name):
 
 
 def pulling(atoms: Atoms, pair_atoms: Atoms, index=None,
-            init_spring_k=0.2, pulling_threshold=5,
+            init_spring_k=0.2, pulling_threshold=2.0,
+            max_pulling_step=100,
             use_sopt=False, remove_translate_rotate=True,
-            calculator=None):
+            calculator=None,
+            converge_threshold=0.5,
+            ):
 
     import copy
     if remove_translate_rotate:
@@ -75,12 +79,12 @@ def pulling(atoms: Atoms, pair_atoms: Atoms, index=None,
 
     calculator = calculator or EMT()
     start.calc = calculator
-    if isinstance(calculator, (Gromacs, RigidCalculator)):
+    if isinstance(calculator, (Gromacs, RobustCalculator)):
         calculator.atoms = start
 
     converged = False
     pulling_step = 0
-    max_pulling_step = 100
+
     spring_k = init_spring_k
     spring_order = 1
     enable_gro = False
@@ -105,7 +109,7 @@ def pulling(atoms: Atoms, pair_atoms: Atoms, index=None,
                             use_line_search=False, master=None,
                             force_consistent=None, append_trajectory=True)
         # import pdb; pdb.set_trace()
-        pull.run(fmax=0.2, steps=200)
+        pull.run(fmax=0.2, steps=100)
 
         if enable_gro:
             start.write('.pull.gro')
@@ -115,13 +119,19 @@ def pulling(atoms: Atoms, pair_atoms: Atoms, index=None,
         if use_sopt:
             start.disable_pulling()
             print('start BFGS_SOPT')
-            opt = SOPT_BFGS(atoms=start, anchor=pair_atoms, index=index,
-                            logfile='-',
-                            trajectory='sopt.traj', append_trajectory=True)
-            opt.run(fmax=0.1)
+            # start.calc = EMT()
+            try:
+                opt = SOPT_BFGS(atoms=start, anchor=pair_atoms, index=index,
+                                logfile='-',
+                                trajectory='sopt.traj', append_trajectory=True)
+                # import pdb; pdb.set_trace()
+                opt.run(fmax=0.1, steps=100)
+            except:
+                # if sopt fail, the continue
+                pass
 
         dx = start.get_positions() - pair_atoms.get_positions()
-        if abs(dx).max() < 0.8:
+        if abs(dx).max() < converge_threshold:
             converged = True
             print('Converged!', pulling_step)
 
@@ -135,8 +145,40 @@ def pulling(atoms: Atoms, pair_atoms: Atoms, index=None,
         start.disable_pulling()
         traj.write(start)
 
+        start.calc = calculator
+
 
 def pulling_gromacs(atoms, pair_atoms,
                     index_filename='index.ndx', index_name='protein_lig'):
     index = get_gromcas_index('index.ndx', 'protein_lig')
     pulling(atoms, pair_atoms, index)
+
+
+def _meta_pulling_rigid(start: Atoms, pair: Atoms,
+                        trajectory=None, logfile='-', refinement=False):
+    from atoms_pulling.rigid import RigidOptimizer
+    opt = RigidOptimizer(start, pair, trajectory=trajectory,
+                         logfile=logfile, refinement=refinement)
+    start = opt.rigid_optimization()
+    return start
+
+
+def pulling_rigid(start: Atoms, end: Atoms,
+                  trajectory=None, logfile='-'):
+    print(' -- start coarse rigid opt')
+    print(' --- opt start')
+    start = _meta_pulling_rigid(start, end, trajectory='coarse_start.traj')
+    print(' --- opt end')
+    end = _meta_pulling_rigid(end, start, trajectory='coarse_end.traj')
+
+    print(' -- start fine rigid opt')
+    print(' --- opt start')
+    start = _meta_pulling_rigid(start, end, refinement=True, trajectory='fine_start.traj')
+    print(' --- opt end')
+    end = _meta_pulling_rigid(end, start, refinement=True, trajectory='fine_end.traj')
+
+    return start, end
+
+
+if __name__ == '__main__':
+    pass

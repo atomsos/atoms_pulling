@@ -263,6 +263,10 @@ class SOPT_BFGS(Optimizer):
             self.set_force_consistent()
         self.fmax = fmax
         step = 0
+        # import pdb; pdb.set_trace()
+        if self.converged():
+            yield True
+            return True
         while step < steps:
             origin_f = self.atoms.get_forces()
             # f = self.step(origin_f)
