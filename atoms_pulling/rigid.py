@@ -258,6 +258,7 @@ class RigidOptimizer():
             for theta in range(-180, 180, 20):
                 for psi in range(-180, 180, 20):
                     atoms.set_positions(initial_position.copy())
+                    # atoms.rotate
                     atoms.euler_rotate(phi, theta, psi, mass_center)
                     new_pos = atoms.get_positions()
                     if self.collapse(new_pos, group_index, only_dist=self.refinement):
